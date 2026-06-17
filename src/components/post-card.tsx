@@ -1,6 +1,8 @@
 import { MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { HashtagLinks } from "@/components/hashtag-links";
 import { LikeButton } from "@/components/like-button";
+import { PostManagement } from "@/components/post-management";
 import { ReportButton } from "@/components/report-button";
 import { RepostButton } from "@/components/repost-button";
 
@@ -21,6 +23,7 @@ type PostCardProps = {
   viewer?: {
     liked: boolean;
     reposted?: boolean;
+    canManage?: boolean;
   };
 };
 
@@ -43,16 +46,22 @@ export function PostCard({ id, author, content, createdAt, stats, viewer }: Post
           {author.displayName.slice(0, 1).toUpperCase()}
         </Link>
         <div className="min-w-0 flex-1">
-          <Link className="block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-leaf" href={`/posts/${id}`}>
+          <div className="rounded-md">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h2 className="font-black leading-tight">{author.displayName}</h2>
+              <Link className="font-black leading-tight transition hover:text-leaf" href={`/users/${author.handle}`}>
+                {author.displayName}
+              </Link>
               <span className="text-sm text-ink/55">@{author.handle}</span>
               <span className="text-sm text-ink/35">·</span>
-              <time className="text-sm text-ink/55">{formatter.format(createdAt)}</time>
+              <Link className="text-sm text-ink/55 transition hover:text-leaf" href={`/posts/${id}`}>
+                <time>{formatter.format(createdAt)}</time>
+              </Link>
             </div>
             {author.bio ? <p className="mt-0.5 text-sm text-ink/55">{author.bio}</p> : null}
             <p className="mt-3 whitespace-pre-wrap text-[15px] leading-7 text-ink">{content}</p>
-          </Link>
+            <HashtagLinks content={content} />
+          </div>
+          {viewer?.canManage ? <PostManagement initialContent={content} postId={id} /> : null}
 
           <div className="mt-4 grid grid-cols-4 gap-2 text-ink/60">
             <Link

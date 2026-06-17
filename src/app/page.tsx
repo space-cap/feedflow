@@ -3,12 +3,14 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { PostCard } from "@/components/post-card";
 import { PostComposer } from "@/components/post-composer";
+import { getBlockedUserIds } from "@/lib/blocking";
 import { getDemoUser, getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 async function getHomePosts(viewerId: string) {
+  const blockedUserIds = await getBlockedUserIds(viewerId);
   const following = await prisma.follow.findMany({
     where: {
       followerId: viewerId,
@@ -19,11 +21,12 @@ async function getHomePosts(viewerId: string) {
     }
   });
   const authorIds = [viewerId, ...following.map((follow) => follow.followingId)];
+  const visibleAuthorIds = authorIds.filter((authorId) => !blockedUserIds.includes(authorId));
 
   return prisma.post.findMany({
     where: {
       authorId: {
-        in: authorIds
+        in: visibleAuthorIds
       },
       deletedAt: null,
       isHidden: false,
@@ -210,7 +213,8 @@ export default async function HomePage() {
                 }}
                 viewer={{
                   liked: post.likes.length > 0,
-                  reposted: post.reposts.length > 0
+                  reposted: post.reposts.length > 0,
+                  canManage: post.author.id === viewer.id
                 }}
               />
             ))

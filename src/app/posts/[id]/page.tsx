@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { ReplyComposer } from "@/components/reply-composer";
+import { getBlockedUserIds, isBlockedBetween } from "@/lib/blocking";
 import { getDemoUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
@@ -15,11 +16,15 @@ type PostDetailPageProps = {
 };
 
 async function getPost(id: string, viewerId: string) {
+  const blockedUserIds = await getBlockedUserIds(viewerId);
   return prisma.post.findFirst({
     where: {
       id,
       deletedAt: null,
-      isHidden: false
+      isHidden: false,
+      authorId: {
+        notIn: blockedUserIds
+      }
     },
     include: {
       author: {
@@ -49,7 +54,10 @@ async function getPost(id: string, viewerId: string) {
       replies: {
         where: {
           deletedAt: null,
-          isHidden: false
+          isHidden: false,
+          authorId: {
+            notIn: blockedUserIds
+          }
         },
         include: {
           author: {
@@ -88,7 +96,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const viewer = await getDemoUser();
   const post = await getPost(id, viewer.id);
 
-  if (!post) {
+  if (!post || (await isBlockedBetween(viewer.id, post.author.id))) {
     notFound();
   }
 
@@ -128,7 +136,8 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
             }}
             viewer={{
               liked: post.likes.length > 0,
-              reposted: post.reposts.length > 0
+              reposted: post.reposts.length > 0,
+              canManage: post.author.id === viewer.id
             }}
           />
 
@@ -163,7 +172,8 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
                   }}
                   viewer={{
                     liked: reply.likes.length > 0,
-                    reposted: reply.reposts.length > 0
+                    reposted: reply.reposts.length > 0,
+                    canManage: reply.author.id === viewer.id
                   }}
                 />
               ))

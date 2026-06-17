@@ -13,7 +13,22 @@ const formatter = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit"
 });
 
-export default async function AdminReportsPage() {
+type AdminReportsPageProps = {
+  searchParams: Promise<{
+    status?: string;
+  }>;
+};
+
+const statusFilters = [
+  { label: "전체", value: "" },
+  { label: "열림", value: "open" },
+  { label: "검토", value: "reviewing" },
+  { label: "해결", value: "resolved" },
+  { label: "기각", value: "rejected" }
+];
+
+export default async function AdminReportsPage({ searchParams }: AdminReportsPageProps) {
+  const { status } = await searchParams;
   const user = await getSessionUser();
 
   if (!user || user.role !== "admin") {
@@ -34,6 +49,9 @@ export default async function AdminReportsPage() {
   }
 
   const reports = await prisma.report.findMany({
+    where: {
+      ...(status ? { status } : {})
+    },
     include: {
       reporter: {
         select: {
@@ -46,7 +64,7 @@ export default async function AdminReportsPage() {
     take: 50
   });
 
-  const openCount = reports.filter((report) => report.status === "open").length;
+  const openCount = await prisma.report.count({ where: { status: "open" } });
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-4 sm:px-6">
@@ -67,6 +85,21 @@ export default async function AdminReportsPage() {
       </header>
 
       <div className="space-y-3 py-4">
+        <nav className="flex flex-wrap gap-2">
+          {statusFilters.map((filter) => (
+            <Link
+              className={`rounded-md border px-3 py-2 text-sm font-bold transition ${
+                (status ?? "") === filter.value
+                  ? "border-ink bg-ink text-white"
+                  : "border-ink/10 bg-white text-ink hover:bg-mist"
+              }`}
+              href={filter.value ? `/admin/reports?status=${filter.value}` : "/admin/reports"}
+              key={filter.value || "all"}
+            >
+              {filter.label}
+            </Link>
+          ))}
+        </nav>
         {reports.length === 0 ? (
           <div className="rounded-md border border-dashed border-ink/15 bg-white p-8 text-center text-sm text-ink/55">
             접수된 신고가 없습니다.
@@ -90,6 +123,19 @@ export default async function AdminReportsPage() {
                     대상: <span className="font-mono">{report.targetId}</span>
                   </p>
                   <p className="mt-1 text-sm">사유: {report.reason}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                    <Link
+                      className="font-bold text-leaf hover:text-ink"
+                      href={`/admin/reports/${report.id}`}
+                    >
+                      상세 보기
+                    </Link>
+                    {report.targetType === "post" ? (
+                      <Link className="font-bold text-leaf hover:text-ink" href={`/posts/${report.targetId}`}>
+                        대상 게시글
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
                 <AdminReportActions
                   reportId={report.id}

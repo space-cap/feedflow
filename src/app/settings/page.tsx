@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, ShieldAlert, UserRound } from "lucide-react";
+import { ArrowLeft, Ban, ShieldAlert, UserCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { getSessionUser } from "@/lib/demo-session";
@@ -59,6 +59,13 @@ export default async function SettingsPage() {
         >
           <Ban aria-hidden="true" className="h-5 w-5" />
           <span>차단 목록</span>
+        </Link>
+        <Link
+          className="flex items-center gap-3 rounded-md border border-ink/10 bg-white p-4 font-bold shadow-sm transition hover:bg-mist"
+          href="/settings/follow-requests"
+        >
+          <UserCheck aria-hidden="true" className="h-5 w-5" />
+          <span>팔로우 요청</span>
         </Link>
         <Link
           className="flex items-center gap-3 rounded-md border border-ink/10 bg-white p-4 font-bold shadow-sm transition hover:bg-mist"

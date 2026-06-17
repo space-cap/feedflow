@@ -1,27 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBlockedUserIds } from "@/lib/blocking";
 import { getDemoUser } from "@/lib/demo-session";
+import { normalizeHashtag } from "@/lib/hashtags";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const viewer = await getDemoUser();
+  const blockedUserIds = await getBlockedUserIds(viewer.id);
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const tag = normalizeHashtag(request.nextUrl.searchParams.get("tag") ?? "");
+  const postTextFilters = [
+    ...(q ? [{ content: { contains: q } }] : []),
+    ...(tag ? [{ content: { contains: `#${tag}` } }] : [])
+  ];
 
   const [posts, users] = await Promise.all([
     prisma.post.findMany({
       where: {
+        authorId: {
+          notIn: blockedUserIds
+        },
         deletedAt: null,
         isHidden: false,
         parentPostId: null,
         visibility: "public",
-        ...(q
-          ? {
-              content: {
-                contains: q
-              }
-            }
-          : {})
+        ...(postTextFilters.length > 0 ? { AND: postTextFilters } : {})
       },
       include: {
         author: {
@@ -47,6 +52,9 @@ export async function GET(request: NextRequest) {
     }),
     prisma.user.findMany({
       where: {
+        id: {
+          notIn: blockedUserIds
+        },
         deletedAt: null,
         status: "active",
         ...(q

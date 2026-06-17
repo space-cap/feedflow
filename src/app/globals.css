@@ -21,6 +21,12 @@ body {
   color: #17211b;
 }
 
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: 68px;
+  }
+}
+
 button,
 textarea {
   font: inherit;

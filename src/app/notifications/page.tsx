@@ -1,6 +1,8 @@
 import { ArrowLeft, Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { NotificationReadButton } from "@/components/notification-read-button";
 import { ReadAllNotificationsButton } from "@/components/read-all-notifications-button";
+import { getBlockedUserIds } from "@/lib/blocking";
 import { getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
@@ -61,9 +63,11 @@ export default async function NotificationsPage() {
       </main>
     );
   }
+  const blockedUserIds = await getBlockedUserIds(viewer.id);
   const notifications = await prisma.notification.findMany({
     where: {
-      receiverId: viewer.id
+      receiverId: viewer.id,
+      OR: [{ actorId: null }, { actorId: { notIn: blockedUserIds } }]
     },
     include: {
       actor: {
@@ -109,32 +113,38 @@ export default async function NotificationsPage() {
         ) : (
           notifications.map((notification) => {
             const actorName = notification.actor?.displayName ?? "누군가";
-            const content = (
-              <article className="flex gap-3 rounded-md border border-ink/10 bg-white p-4 shadow-sm transition hover:border-leaf/30">
+            const textContent = (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!notification.readAt ? (
+                    <span className="h-2 w-2 rounded-full bg-coral" aria-label="읽지 않음" />
+                  ) : null}
+                  <p className="font-bold">{getNotificationText(notification.type, actorName)}</p>
+                </div>
+                <p className="mt-1 text-sm text-ink/55">
+                  {notification.actor ? `@${notification.actor.handle}` : "system"} ·{" "}
+                  {formatter.format(notification.createdAt)}
+                </p>
+              </>
+            );
+
+            return (
+              <article
+                className="flex gap-3 rounded-md border border-ink/10 bg-white p-4 shadow-sm transition hover:border-leaf/30"
+                key={notification.id}
+              >
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-mist text-leaf">
                   <NotificationIcon type={notification.type} />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {!notification.readAt ? (
-                      <span className="h-2 w-2 rounded-full bg-coral" aria-label="읽지 않음" />
-                    ) : null}
-                    <p className="font-bold">{getNotificationText(notification.type, actorName)}</p>
-                  </div>
-                  <p className="mt-1 text-sm text-ink/55">
-                    {notification.actor ? `@${notification.actor.handle}` : "system"} ·{" "}
-                    {formatter.format(notification.createdAt)}
-                  </p>
-                </div>
+                {notification.postId ? (
+                  <Link className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-leaf" href={`/posts/${notification.postId}`}>
+                    {textContent}
+                  </Link>
+                ) : (
+                  <div className="min-w-0 flex-1">{textContent}</div>
+                )}
+                {!notification.readAt ? <NotificationReadButton notificationId={notification.id} /> : null}
               </article>
-            );
-
-            return notification.postId ? (
-              <Link href={`/posts/${notification.postId}`} key={notification.id}>
-                {content}
-              </Link>
-            ) : (
-              <div key={notification.id}>{content}</div>
             );
           })
         )}

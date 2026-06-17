@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2, Save } from "lucide-react";
+import { ImageUp, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 
 type ProfileFormProps = {
   user: {
@@ -16,7 +16,40 @@ type ProfileFormProps = {
 export function ProfileForm({ user }: ProfileFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
+  const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/uploads", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+      setError(body?.error?.message ?? "이미지를 업로드하지 못했습니다.");
+      setUploading(false);
+      return;
+    }
+
+    const body = (await response.json()) as { data: { url: string } };
+    setAvatarUrl(body.data.url);
+    setUploading(false);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,7 +63,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       body: JSON.stringify({
         displayName: String(formData.get("displayName") ?? ""),
         bio: String(formData.get("bio") ?? ""),
-        avatarUrl: String(formData.get("avatarUrl") ?? ""),
+        avatarUrl,
         isPrivate: formData.get("isPrivate") === "on"
       })
     });
@@ -80,11 +113,21 @@ export function ProfileForm({ user }: ProfileFormProps) {
         </label>
         <input
           className="mt-1 h-11 w-full rounded-md border border-ink/10 bg-white px-3 outline-none focus:border-leaf"
-          defaultValue={user.avatarUrl ?? ""}
           id="avatarUrl"
           name="avatarUrl"
+          onChange={(event) => setAvatarUrl(event.target.value)}
           type="url"
+          value={avatarUrl}
         />
+        <label className="mt-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-ink/10 bg-white px-3 text-sm font-bold text-ink transition hover:bg-mist">
+          {uploading ? (
+            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImageUp aria-hidden="true" className="h-4 w-4" />
+          )}
+          <span>이미지 업로드</span>
+          <input accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={uploadAvatar} type="file" />
+        </label>
       </div>
       <label className="flex items-center gap-3 rounded-md border border-ink/10 p-3 text-sm font-bold">
         <input defaultChecked={user.isPrivate} name="isPrivate" type="checkbox" />

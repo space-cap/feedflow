@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { forbidden, unauthorized } from "@/lib/api-auth";
 import { getSessionUser } from "@/lib/demo-session";
+import { cursorWhere, decodeCursor, getNextCursor, parseLimit, trimPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const limit = parseLimit(url.searchParams.get("limit"), 50, 100);
+  const cursor = decodeCursor(url.searchParams.get("cursor"));
+  const status = url.searchParams.get("status");
   const admin = await getSessionUser();
 
   if (!admin) {
@@ -17,6 +22,10 @@ export async function GET() {
   }
 
   const reports = await prisma.report.findMany({
+    where: {
+      ...(status ? { status } : {}),
+      ...cursorWhere(cursor)
+    },
     include: {
       reporter: {
         select: {
@@ -34,11 +43,13 @@ export async function GET() {
       }
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: 50
+    take: limit + 1
   });
+  const pageItems = trimPage(reports, limit);
+  const nextCursor = getNextCursor(reports, limit);
 
   return NextResponse.json({
-    data: reports.map((report) => ({
+    data: pageItems.map((report) => ({
       id: report.id,
       targetType: report.targetType,
       targetId: report.targetId,
@@ -50,8 +61,8 @@ export async function GET() {
       createdAt: report.createdAt.toISOString()
     })),
     page: {
-      nextCursor: null,
-      hasNext: false
+      nextCursor,
+      hasNext: nextCursor !== null
     }
   });
 }

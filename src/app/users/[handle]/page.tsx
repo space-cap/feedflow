@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BlockButton } from "@/components/block-button";
 import { FollowButton } from "@/components/follow-button";
 import { PostCard } from "@/components/post-card";
+import { getBlockedUserIds, isBlockedBetween } from "@/lib/blocking";
 import { getDemoUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
@@ -16,6 +17,7 @@ type UserProfilePageProps = {
 };
 
 async function getProfile(handle: string, viewerId: string) {
+  const blockedUserIds = await getBlockedUserIds(viewerId);
   const user = await prisma.user.findFirst({
     where: {
       handle,
@@ -35,7 +37,10 @@ async function getProfile(handle: string, viewerId: string) {
         where: {
           deletedAt: null,
           isHidden: false,
-          parentPostId: null
+          parentPostId: null,
+          authorId: {
+            notIn: blockedUserIds
+          }
         },
         include: {
           author: {
@@ -61,6 +66,10 @@ async function getProfile(handle: string, viewerId: string) {
   });
 
   if (!user) {
+    return null;
+  }
+
+  if (await isBlockedBetween(viewerId, user.id)) {
     return null;
   }
 
@@ -180,7 +189,8 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                   }}
                   viewer={{
                     liked: post.likes.length > 0,
-                    reposted: post.reposts.length > 0
+                    reposted: post.reposts.length > 0,
+                    canManage: post.author.id === viewer.id
                   }}
                 />
               ))}

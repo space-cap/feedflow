@@ -11,7 +11,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:init": "node scripts/init-db.mjs",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "node scripts/reset-db.mjs",
+    "test:api": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
