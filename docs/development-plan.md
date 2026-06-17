@@ -6,6 +6,8 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 
 초기 목표는 거대한 소셜 플랫폼을 한 번에 재현하는 것이 아니라, 핵심 사용 흐름인 가입, 프로필, 게시, 피드, 팔로우, 반응, 알림을 안정적으로 구현한 뒤 검색, 추천, 신고/운영, 미디어, 실시간 기능을 단계적으로 확장하는 것이다.
 
+현재 구현은 Next.js App Router 기반의 모듈형 모놀리식 애플리케이션이다. 별도 NestJS 서버 없이 `src/app/api` Route Handler가 API 서버 역할을 하며, 개발 DB는 Prisma + SQLite를 사용한다.
+
 ## 2. 제품 목표
 
 ### 2.1 핵심 목표
@@ -23,6 +25,19 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 - 게시글 작성 후 피드 반영까지 1초 이내를 목표로 한다.
 - 기본 사용자 흐름에 대한 자동화 테스트를 갖춘다.
 - 운영자가 신고된 게시글과 계정을 확인할 수 있는 최소 관리자 화면을 제공한다.
+
+### 2.3 현재 구현 상태 요약
+
+- Next.js App Router, TypeScript, Tailwind CSS, Prisma, SQLite 기반으로 구현한다.
+- 인증은 `feedflow_user_id` HTTP-only 쿠키 세션을 사용한다.
+- 회원가입, 로그인, 로그아웃, 프로필 편집, 프로필 이미지 업로드가 구현되어 있다.
+- 게시글 작성, 조회, 수정, 삭제, 댓글, 좋아요, 재게시가 구현되어 있다.
+- 홈 피드, 탐색 피드, 프로필 피드, 커서 페이지네이션이 구현되어 있다.
+- 팔로우, 언팔로우, 비공개 계정 팔로우 요청 승인/거절이 구현되어 있다.
+- 알림 목록, 전체 읽음, 개별 읽음이 구현되어 있다.
+- 신고 생성, 관리자 신고 목록/상세/상태 변경, 게시글 숨김, 사용자 차단이 구현되어 있다.
+- 해시태그 추출, 탐색 화면 해시태그 필터, 모바일 하단 탭, 공통 로딩/에러/404 화면이 구현되어 있다.
+- Dockerfile과 배포 가이드는 준비되어 있으나 운영 모니터링, rate limit, CI는 아직 남은 작업이다.
 
 ## 3. 사용자 범위
 
@@ -51,7 +66,7 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 
 - 이메일 기반 회원가입
 - 로그인, 로그아웃
-- 비밀번호 재설정
+- 비밀번호 재설정은 다음 단계 기능으로 둔다.
 - 닉네임, 핸들, 소개글, 프로필 이미지 설정
 - 공개 계정과 비공개 계정 옵션
 
@@ -66,6 +81,7 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 - 좋아요
 - 재게시
 - 링크 미리보기는 MVP 이후 기능으로 분리
+- 프로필 이미지는 로컬 업로드 방식으로 지원한다. 게시글 이미지 첨부는 이후 기능으로 분리한다.
 
 ### 4.3 피드
 
@@ -105,7 +121,7 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 - DM
 - 음성/영상 게시
 - 실시간 추천 알고리즘
-- 해시태그 트렌드
+- 고급 해시태그 트렌드
 - 고급 검색
 - 유료 인증 배지
 - 광고 시스템
@@ -129,12 +145,12 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 
 ### 6.2 백엔드
 
-초기 구현은 다음 두 가지 중 하나를 선택한다.
+초기 구현은 다음 구조로 확정한다.
 
-- Node.js/NestJS: 프론트엔드와 같은 TypeScript 생태계를 공유하고 실시간 기능 확장이 쉽다.
-- Spring Boot: 안정적인 백엔드 구조, 트랜잭션 처리, 엔터프라이즈 운영 경험을 활용하기 좋다.
+- Next.js App Router Route Handler: 프론트엔드와 같은 TypeScript 코드베이스에서 API를 함께 제공할 수 있고, 초기 제품 검증 속도가 빠르다.
+- NestJS 또는 Spring Boot: 서비스가 커져 API 서버를 분리해야 할 때 전환 후보로 둔다.
 
-이 계획서의 기본안은 Next.js + NestJS + SQLite 조합으로 작성한다. 개발 단계에서는 SQLite로 빠르게 구현하고, 운영 단계에서 트래픽과 동시성 요구가 커지면 PostgreSQL로 전환할 수 있도록 ORM과 마이그레이션을 전제로 설계한다.
+이 프로젝트의 현재 기본안은 Next.js App Router + Prisma + SQLite 조합이다. 개발 단계에서는 SQLite로 빠르게 구현하고, 운영 단계에서 트래픽과 동시성 요구가 커지면 PostgreSQL로 전환할 수 있도록 Prisma 스키마와 마이그레이션을 전제로 설계한다.
 
 ### 6.3 데이터베이스와 인프라
 
@@ -148,11 +164,12 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 
 ## 7. 시스템 아키텍처
 
-초기 구조는 단순한 모듈형 모놀리식 백엔드로 시작한다. 서비스가 성장하면 피드, 알림, 검색, 미디어 처리 영역을 별도 서비스로 분리할 수 있다.
+초기 구조는 Next.js 안에서 화면과 API를 함께 제공하는 단순한 모듈형 모놀리식 구조로 시작한다. 서비스가 성장하면 피드, 알림, 검색, 미디어 처리 영역을 별도 서비스로 분리할 수 있다.
 
 ```text
 Web Client
-  -> API Server
+  -> Next.js App Router
+    -> Route Handlers
     -> SQLite
     -> Redis
     -> Object Storage
@@ -255,61 +272,64 @@ Background Worker
 
 ### 9.1 Auth
 
-- `POST /auth/signup`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `POST /auth/password/reset-request`
-- `POST /auth/password/reset`
-- `GET /auth/me`
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `POST /api/auth/password/reset-request` 예정
+- `POST /api/auth/password/reset` 예정
 
 ### 9.2 Users
 
-- `GET /users/:handle`
-- `PATCH /users/me`
-- `GET /users/:handle/posts`
-- `POST /users/:id/block`
-- `DELETE /users/:id/block`
+- `GET /api/profiles/:handle`
+- `PATCH /api/users/me`
+- `POST /api/users/:id/block`
+- `DELETE /api/users/:id/block`
+- `POST /api/uploads`
+- `GET /api/users/:handle/posts` 예정
 
 ### 9.3 Posts
 
-- `POST /posts`
-- `GET /posts/:id`
-- `PATCH /posts/:id`
-- `DELETE /posts/:id`
-- `POST /posts/:id/replies`
-- `POST /posts/:id/like`
-- `DELETE /posts/:id/like`
-- `POST /posts/:id/repost`
-- `DELETE /posts/:id/repost`
+- `POST /api/posts`
+- `GET /api/posts/:id`
+- `PATCH /api/posts/:id`
+- `DELETE /api/posts/:id`
+- `POST /api/posts/:id/replies`
+- `POST /api/posts/:id/like`
+- `DELETE /api/posts/:id/like`
+- `POST /api/posts/:id/repost`
+- `DELETE /api/posts/:id/repost`
 
 ### 9.4 Follows
 
-- `POST /users/:id/follow`
-- `DELETE /users/:id/follow`
-- `GET /users/:handle/followers`
-- `GET /users/:handle/following`
-- `POST /follow-requests/:id/approve`
-- `POST /follow-requests/:id/reject`
+- `POST /api/users/:id/follow`
+- `DELETE /api/users/:id/follow`
+- `GET /api/follow-requests`
+- `POST /api/follow-requests/:id/approve`
+- `POST /api/follow-requests/:id/reject`
+- `GET /api/users/:handle/followers` 예정
+- `GET /api/users/:handle/following` 예정
 
 ### 9.5 Feeds
 
-- `GET /feeds/home`
-- `GET /feeds/explore`
-- `GET /feeds/user/:handle`
+- `GET /api/feeds/home`
+- `GET /api/feeds/explore`
+- `GET /api/search`
+- `GET /api/feeds/user/:handle` 예정
 
 ### 9.6 Notifications
 
-- `GET /notifications`
-- `PATCH /notifications/:id/read`
-- `PATCH /notifications/read-all`
+- `GET /api/notifications`
+- `PATCH /api/notifications/:id/read`
+- `PATCH /api/notifications/read-all`
 
 ### 9.7 Moderation
 
-- `POST /reports`
-- `GET /admin/reports`
-- `PATCH /admin/reports/:id`
-- `POST /admin/posts/:id/hide`
-- `POST /admin/users/:id/suspend`
+- `POST /api/reports`
+- `GET /api/admin/reports`
+- `PATCH /api/admin/reports/:id`
+- `POST /api/admin/posts/:id/hide`
+- `POST /api/admin/users/:id/suspend` 예정
 
 ## 10. 화면 구성
 
@@ -317,7 +337,7 @@ Background Worker
 
 - 로그인
 - 회원가입
-- 비밀번호 재설정
+- 비밀번호 재설정 예정
 - 공개 프로필
 - 게시글 상세
 
@@ -332,13 +352,14 @@ Background Worker
 - 알림
 - 설정
 - 차단 사용자 목록
+- 팔로우 요청 관리
 
 ### 10.3 관리자 화면
 
 - 신고 대시보드
 - 신고 상세
-- 숨김 처리된 게시글 목록
-- 제한된 계정 목록
+- 숨김 처리된 게시글 목록 예정
+- 제한된 계정 목록 예정
 
 ## 11. 피드 전략
 
@@ -371,8 +392,9 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 ### 12.1 인증 보안
 
 - 비밀번호 해시는 bcrypt 또는 Argon2 사용
-- Access Token과 Refresh Token 분리
-- Refresh Token 회전
+- 현재 구현은 HTTP-only 쿠키 세션을 사용한다.
+- 운영 전환 시 Access Token과 Refresh Token 분리 또는 서버 세션 저장소 도입을 검토한다.
+- 운영 전환 시 Refresh Token 회전 또는 세션 회전을 검토한다.
 - 로그인 실패 rate limit
 - 이메일 인증 도입 검토
 
@@ -385,9 +407,9 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 
 ### 12.3 API 보호
 
-- 게시글 작성 rate limit
-- 댓글 작성 rate limit
-- 팔로우 요청 rate limit
+- 게시글 작성 rate limit 예정
+- 댓글 작성 rate limit 예정
+- 팔로우 요청 rate limit 예정
 - 관리자 API 권한 검증
 - 입력값 검증과 XSS 방어
 
@@ -411,6 +433,9 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 
 ### 13.3 E2E 테스트
 
+- 현재는 `scripts/smoke-test.mjs`로 보호 API, 게시글 작성/수정, 관리자 권한 흐름을 검증한다.
+- 브라우저 기반 E2E는 다음 단계에서 Playwright 등으로 추가한다.
+
 - 신규 사용자 온보딩
 - 게시글 작성과 삭제
 - 팔로우와 피드 확인
@@ -426,7 +451,7 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 - DB 스키마 초안 작성
 - 프로젝트 구조 생성
 - SQLite 개발 DB와 마이그레이션 환경 구성
-- Redis 실행 환경 구성
+- Redis 실행 환경 구성 예정
 - CI 기본 설정
 
 ### 2단계: 인증과 사용자, 1~2주
@@ -464,11 +489,12 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 
 ### 6단계: 품질 개선과 출시 준비, 1~2주
 
-- E2E 테스트
+- API 스모크 테스트
+- E2E 테스트 예정
 - 성능 점검
 - 접근성 점검
 - 배포 환경 구성
-- 운영 로그와 모니터링 설정
+- 운영 로그와 모니터링 설정 예정
 - 베타 출시
 
 ## 15. 배포 전략
@@ -476,8 +502,8 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 ### 15.1 개발 환경
 
 - SQLite 파일 DB를 사용해 로컬 개발 진입 장벽 최소화
-- Docker Compose로 Redis 등 보조 인프라 실행
-- 프론트엔드와 백엔드는 로컬에서 별도 실행
+- Redis 등 보조 인프라는 이후 Docker Compose로 추가한다.
+- 프론트엔드와 API는 Next.js 개발 서버에서 함께 실행한다.
 - `.env.example` 제공
 
 ### 15.2 스테이징 환경
@@ -543,9 +569,9 @@ DM, 추천 알고리즘, 트렌드, 미디어 기능을 너무 빨리 넣으면 
 
 ### 이후 구현
 
-- 이미지 첨부
-- 검색
-- 해시태그
+- 게시글 이미지 첨부
+- 고급 검색
+- 고급 해시태그 트렌드
 - 추천 알고리즘 개선
 - DM
 - 트렌드
@@ -553,8 +579,8 @@ DM, 추천 알고리즘, 트렌드, 미디어 기능을 너무 빨리 넣으면 
 
 ## 19. 다음 액션
 
-1. 기술 스택을 Next.js + NestJS + SQLite로 확정한다.
-2. MVP 화면 목록을 기준으로 와이어프레임을 작성한다.
-3. DB ERD를 작성한다.
-4. API 명세를 OpenAPI 문서로 구체화한다.
-5. 프로젝트 초기 구조, SQLite 마이그레이션, Redis 실행 환경을 생성한다.
+1. 현재 문서와 실제 구현 상태를 기준으로 남은 기능을 이슈 단위로 정리한다.
+2. 비밀번호 재설정, 팔로워/팔로잉 목록, 관리자 사용자 제재 중 다음 구현 대상을 선택한다.
+3. GitHub Actions 기반 CI를 추가해 lint, build, smoke test를 자동화한다.
+4. rate limit, 보안 쿠키 옵션, 운영 로그를 추가한다.
+5. 운영 DB 전환 여부를 결정하고 PostgreSQL 전환 계획을 구체화한다.

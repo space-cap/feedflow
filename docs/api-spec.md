@@ -4,7 +4,7 @@
 
 - Base URL: `/api`
 - 요청과 응답은 JSON을 사용한다.
-- 인증이 필요한 API는 `Authorization: Bearer <token>` 헤더를 사용한다.
+- 인증이 필요한 API는 로그인 시 설정되는 HTTP-only 쿠키 `feedflow_user_id`를 사용한다.
 - 목록 API는 커서 페이지네이션을 사용한다.
 - 시간 값은 ISO 8601 문자열로 응답한다.
 
@@ -102,9 +102,9 @@
 ```json
 {
   "data": {
-    "accessToken": "jwt",
     "user": {
       "id": "usr_123",
+      "email": "user@example.com",
       "handle": "feeduser",
       "displayName": "Feed User",
       "role": "user"
@@ -152,7 +152,7 @@
 
 ### 5.1 프로필 조회
 
-`GET /api/users/:handle`
+`GET /api/profiles/:handle`
 
 응답:
 
@@ -205,7 +205,28 @@
 }
 ```
 
-### 5.3 사용자 차단
+### 5.3 프로필 이미지 업로드
+
+`POST /api/uploads`
+
+요청:
+
+- `multipart/form-data`
+- 필드명: `file`
+- 허용 형식: PNG, JPEG, WebP, GIF
+- 최대 크기: 2MB
+
+응답:
+
+```json
+{
+  "data": {
+    "url": "/uploads/usr_123-1781692740196.png"
+  }
+}
+```
+
+### 5.4 사용자 차단
 
 `POST /api/users/:id/block`
 
@@ -219,7 +240,7 @@
 }
 ```
 
-### 5.4 사용자 차단 해제
+### 5.5 사용자 차단 해제
 
 `DELETE /api/users/:id/block`
 
@@ -436,9 +457,13 @@
 
 `GET /api/users/:handle/followers?cursor=&limit=20`
 
+상태: 예정
+
 ### 7.4 팔로잉 목록
 
 `GET /api/users/:handle/following?cursor=&limit=20`
+
+상태: 예정
 
 ### 7.5 팔로우 요청 승인
 
@@ -447,6 +472,10 @@
 ### 7.6 팔로우 요청 거절
 
 `POST /api/follow-requests/:id/reject`
+
+### 7.7 받은 팔로우 요청 목록
+
+`GET /api/follow-requests`
 
 ## 8. Feeds API
 
@@ -462,7 +491,7 @@
 
 ### 8.2 추천 피드
 
-`GET /api/feeds/explore?cursor=&limit=20`
+`GET /api/feeds/explore?cursor=&limit=20&tag=feedflow`
 
 설명:
 
@@ -472,6 +501,8 @@
 ### 8.3 프로필 피드
 
 `GET /api/feeds/user/:handle?cursor=&limit=20`
+
+상태: 예정. 현재 화면의 프로필 피드는 서버 컴포넌트에서 직접 Prisma 조회로 렌더링한다.
 
 설명:
 
@@ -544,15 +575,27 @@
 }
 ```
 
-## 11. Admin API
+## 11. Search API
+
+### 11.1 통합 검색
+
+`GET /api/search?q=keyword&tag=feedflow`
+
+설명:
+
+- 공개 게시글과 사용자를 검색한다.
+- `tag`가 있으면 게시글 본문에 `#tag`가 포함된 결과만 반환한다.
+- 숨김, 삭제, 차단 대상 콘텐츠는 제외한다.
+
+## 12. Admin API
 
 모든 Admin API는 관리자 권한이 필요하다.
 
-### 11.1 신고 목록
+### 12.1 신고 목록
 
 `GET /api/admin/reports?status=open&cursor=&limit=20`
 
-### 11.2 신고 상태 변경
+### 12.2 신고 상태 변경
 
 `PATCH /api/admin/reports/:id`
 
@@ -565,7 +608,7 @@
 }
 ```
 
-### 11.3 게시글 숨김
+### 12.3 게시글 숨김
 
 `POST /api/admin/posts/:id/hide`
 
@@ -577,9 +620,11 @@
 }
 ```
 
-### 11.4 계정 정지
+### 12.4 계정 정지
 
 `POST /api/admin/users/:id/suspend`
+
+상태: 예정
 
 요청:
 

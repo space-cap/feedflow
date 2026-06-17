@@ -3,7 +3,8 @@
 ## 1. 설계 원칙
 
 - 개발 DB는 SQLite를 사용한다.
-- 모든 주요 테이블은 `id`, `created_at`, `updated_at`을 기본으로 가진다.
+- 모든 주요 테이블은 `id`, `created_at`을 기본으로 가진다.
+- 수정 가능한 엔티티에는 `updated_at`을 둔다.
 - 삭제가 사용자 경험과 감사 로그에 영향을 주는 데이터는 소프트 삭제한다.
 - 운영 단계 PostgreSQL 전환을 고려해 SQLite 전용 기능 의존을 최소화한다.
 - 시간 값은 ISO 8601 문자열 또는 ORM의 DateTime 타입으로 저장한다.
@@ -20,10 +21,10 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
-| id | text | UUID 또는 cuid 문자열 |
+| id | text | Prisma `cuid()` 문자열 |
 | created_at | datetime | 생성 시각 |
-| updated_at | datetime | 수정 시각 |
-| deleted_at | datetime nullable | 소프트 삭제 시각 |
+| updated_at | datetime | 수정 가능한 엔티티의 수정 시각 |
+| deleted_at | datetime nullable | 소프트 삭제가 필요한 엔티티의 삭제 시각 |
 
 ## 4. 테이블 설계
 
@@ -49,9 +50,8 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_users_handle`
-- `idx_users_email`
-- `idx_users_status`
+- unique `users.email`
+- unique `users.handle`
 
 ### 4.2 posts
 
@@ -75,10 +75,10 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_posts_author_created`
-- `idx_posts_parent_created`
-- `idx_posts_created`
-- `idx_posts_repost_original`
+- `posts.author_id, posts.created_at`
+- `posts.parent_post_id, posts.created_at`
+- `posts.created_at, posts.id`
+- `posts.repost_of_post_id`
 
 제약:
 
@@ -101,9 +101,9 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_follows_follower_status`
-- `idx_follows_following_status`
-- unique `uq_follows_pair(follower_id, following_id)`
+- `follows.follower_id, follows.status`
+- `follows.following_id, follows.status`
+- unique `follows.follower_id, follows.following_id`
 
 ### 4.4 likes
 
@@ -118,9 +118,9 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_likes_post`
-- `idx_likes_user`
-- unique `uq_likes_user_post(user_id, post_id)`
+- `likes.post_id`
+- `likes.user_id`
+- unique `likes.user_id, likes.post_id`
 
 ### 4.5 reposts
 
@@ -136,8 +136,9 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_reposts_post`
-- unique `uq_reposts_user_post(user_id, post_id)`
+- `reposts.post_id`
+- unique `reposts.user_id, reposts.post_id`
+- unique `reposts.repost_post_id`
 
 ### 4.6 notifications
 
@@ -155,8 +156,8 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_notifications_receiver_created`
-- `idx_notifications_receiver_read`
+- `notifications.receiver_id, notifications.created_at`
+- `notifications.receiver_id, notifications.read_at`
 
 ### 4.7 blocks
 
@@ -171,8 +172,8 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_blocks_blocker`
-- unique `uq_blocks_pair(blocker_id, blocked_id)`
+- `blocks.blocker_id`
+- unique `blocks.blocker_id, blocks.blocked_id`
 
 ### 4.8 reports
 
@@ -193,9 +194,9 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 
 인덱스:
 
-- `idx_reports_status_created`
-- `idx_reports_target`
-- `idx_reports_reporter`
+- `reports.status, reports.created_at`
+- `reports.target_type, reports.target_id`
+- `reports.reporter_id`
 
 ### 4.9 moderation_actions
 
@@ -207,7 +208,7 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 | admin_id | text | foreign key, not null | 운영자 ID |
 | target_type | text | not null | `post`, `user`, `report` |
 | target_id | text | not null | 대상 ID |
-| action | text | not null | `hide_post`, `suspend_user`, `resolve_report` |
+| action | text | not null | `hide_post`, `report_open`, `report_reviewing`, `report_resolved`, `report_rejected` |
 | note | text | nullable | 처리 메모 |
 | created_at | datetime | not null | 생성 시각 |
 
