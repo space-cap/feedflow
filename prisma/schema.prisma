@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  handle       String    @unique
+  displayName  String
+  bio          String?
+  avatarUrl    String?
+  isPrivate    Boolean   @default(false)
+  role         String    @default("user")
+  status       String    @default("active")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  posts                Post[]               @relation("AuthorPosts")
+  followingConnections Follow[]             @relation("Follower")
+  followerConnections  Follow[]             @relation("Following")
+  likes                Like[]
+  reposts              Repost[]
+  receivedNotifications Notification[]      @relation("NotificationReceiver")
+  actorNotifications    Notification[]      @relation("NotificationActor")
+  blocksCreated         Block[]             @relation("Blocker")
+  blocksReceived        Block[]             @relation("Blocked")
+  reportsCreated        Report[]            @relation("Reporter")
+  reviewedReports       Report[]            @relation("ReportReviewer")
+  moderationActions     ModerationAction[]   @relation("AdminActions")
+}
+
+model Post {
+  id             String    @id @default(cuid())
+  authorId       String
+  parentPostId   String?
+  repostOfPostId String?
+  content        String
+  visibility     String    @default("public")
+  likeCount      Int       @default(0)
+  replyCount     Int       @default(0)
+  repostCount    Int       @default(0)
+  isHidden       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  author       User   @relation("AuthorPosts", fields: [authorId], references: [id])
+  parentPost   Post?  @relation("PostReplies", fields: [parentPostId], references: [id])
+  replies      Post[] @relation("PostReplies")
+  repostOfPost Post?  @relation("PostReposts", fields: [repostOfPostId], references: [id])
+  repostPosts  Post[] @relation("PostReposts")
+
+  likes         Like[]
+  reposts       Repost[]       @relation("OriginalPostReposts")
+  repostRecords Repost[]       @relation("RepostPost")
+  notifications Notification[]
+
+  @@index([authorId, createdAt])
+  @@index([parentPostId, createdAt])
+  @@index([createdAt, id])
+  @@index([repostOfPostId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  status      String   @default("accepted")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId, status])
+  @@index([followingId, status])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Repost {
+  id           String   @id @default(cuid())
+  userId       String
+  postId       String
+  repostPostId String   @unique
+  createdAt    DateTime @default(now())
+
+  user       User @relation(fields: [userId], references: [id])
+  post       Post @relation("OriginalPostReposts", fields: [postId], references: [id])
+  repostPost Post @relation("RepostPost", fields: [repostPostId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  receiverId String
+  actorId    String?
+  type       String
+  postId     String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  receiver User  @relation("NotificationReceiver", fields: [receiverId], references: [id])
+  actor    User? @relation("NotificationActor", fields: [actorId], references: [id])
+  post     Post? @relation(fields: [postId], references: [id])
+
+  @@index([receiverId, createdAt])
+  @@index([receiverId, readAt])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id])
+  blocked User @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+}
+
+model Report {
+  id         String    @id @default(cuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     String    @default("open")
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  reporter User  @relation("Reporter", fields: [reporterId], references: [id])
+  reviewer User? @relation("ReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterId])
+}
+
+model ModerationAction {
+  id         String   @id @default(cuid())
+  adminId    String
+  targetType String
+  targetId   String
+  action     String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  admin User @relation("AdminActions", fields: [adminId], references: [id])
+}
