@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDemoUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,22 +20,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const author = await prisma.user.findUnique({
-    where: { handle: "demo" },
-    select: { id: true }
-  });
-
-  if (!author) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "DEV_USER_NOT_FOUND",
-          message: "demo 사용자를 찾을 수 없습니다. npm run db:seed를 실행해 주세요."
-        }
-      },
-      { status: 500 }
-    );
-  }
+  const author = await getDemoUser();
 
   const post = await prisma.post.create({
     data: {
