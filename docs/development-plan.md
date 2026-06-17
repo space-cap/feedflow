@@ -134,15 +134,16 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 - Node.js/NestJS: 프론트엔드와 같은 TypeScript 생태계를 공유하고 실시간 기능 확장이 쉽다.
 - Spring Boot: 안정적인 백엔드 구조, 트랜잭션 처리, 엔터프라이즈 운영 경험을 활용하기 좋다.
 
-이 계획서의 기본안은 Next.js + NestJS + PostgreSQL 조합으로 작성한다.
+이 계획서의 기본안은 Next.js + NestJS + SQLite 조합으로 작성한다. 개발 단계에서는 SQLite로 빠르게 구현하고, 운영 단계에서 트래픽과 동시성 요구가 커지면 PostgreSQL로 전환할 수 있도록 ORM과 마이그레이션을 전제로 설계한다.
 
 ### 6.3 데이터베이스와 인프라
 
-- PostgreSQL: 사용자, 게시글, 팔로우, 알림 등 주요 관계형 데이터 저장
+- SQLite: 개발 단계의 사용자, 게시글, 팔로우, 알림 등 주요 관계형 데이터 저장
+- PostgreSQL: 운영 배포 또는 성장 단계에서 전환할 기본 후보
 - Redis: 세션, 캐시, 피드 fan-out 작업 큐, rate limit
 - Object Storage: 프로필 이미지와 추후 미디어 파일 저장
 - Elasticsearch 또는 OpenSearch: 검색 기능 확장 시 도입
-- Docker: 로컬 개발 환경 표준화
+- Docker: Redis 등 보조 인프라와 배포 환경 표준화
 - GitHub Actions: CI/CD
 
 ## 7. 시스템 아키텍처
@@ -152,7 +153,7 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 ```text
 Web Client
   -> API Server
-    -> PostgreSQL
+    -> SQLite
     -> Redis
     -> Object Storage
     -> Background Worker
@@ -424,7 +425,8 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 - 화면 흐름 정의
 - DB 스키마 초안 작성
 - 프로젝트 구조 생성
-- Docker 개발 환경 구성
+- SQLite 개발 DB와 마이그레이션 환경 구성
+- Redis 실행 환경 구성
 - CI 기본 설정
 
 ### 2단계: 인증과 사용자, 1~2주
@@ -473,7 +475,8 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 
 ### 15.1 개발 환경
 
-- Docker Compose로 PostgreSQL, Redis 실행
+- SQLite 파일 DB를 사용해 로컬 개발 진입 장벽 최소화
+- Docker Compose로 Redis 등 보조 인프라 실행
 - 프론트엔드와 백엔드는 로컬에서 별도 실행
 - `.env.example` 제공
 
@@ -483,11 +486,13 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 - staging 브랜치 배포
 - 마이그레이션 자동 적용
 - 운영자 테스트 계정 제공
+- SQLite와 PostgreSQL 간 SQL/ORM 호환성 점검
 
 ### 15.3 운영 환경
 
 - Blue/Green 또는 Rolling 배포
 - DB 백업 자동화
+- 운영 DB는 PostgreSQL 전환을 우선 검토
 - 에러 추적 도구 연동
 - API latency, error rate, queue lag 모니터링
 - 관리자 작업 로그 저장
@@ -548,8 +553,8 @@ DM, 추천 알고리즘, 트렌드, 미디어 기능을 너무 빨리 넣으면 
 
 ## 19. 다음 액션
 
-1. 기술 스택을 Next.js + NestJS + PostgreSQL로 확정할지 결정한다.
+1. 기술 스택을 Next.js + NestJS + SQLite로 확정한다.
 2. MVP 화면 목록을 기준으로 와이어프레임을 작성한다.
 3. DB ERD를 작성한다.
 4. API 명세를 OpenAPI 문서로 구체화한다.
-5. 프로젝트 초기 구조와 Docker 개발 환경을 생성한다.
+5. 프로젝트 초기 구조, SQLite 마이그레이션, Redis 실행 환경을 생성한다.
