@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const author = await getDemoUser();
+  const author = await getRequiredUser();
+
+  if (!author) {
+    return unauthorized();
+  }
   const parentPost = await prisma.post.findFirst({
     where: {
       id,

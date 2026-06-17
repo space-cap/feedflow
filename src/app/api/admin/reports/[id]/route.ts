@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { forbidden, getRequiredAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,11 @@ type RouteContext = {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const reviewer = await getDemoUser();
+  const reviewer = await getRequiredAdmin();
+
+  if (!reviewer) {
+    return forbidden();
+  }
   const body = (await request.json().catch(() => null)) as {
     status?: unknown;
     note?: unknown;

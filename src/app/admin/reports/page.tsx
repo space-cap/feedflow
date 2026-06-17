@@ -1,6 +1,7 @@
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { AdminReportActions } from "@/components/admin-report-actions";
+import { getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,25 @@ const formatter = new Intl.DateTimeFormat("ko-KR", {
 });
 
 export default async function AdminReportsPage() {
+  const user = await getSessionUser();
+
+  if (!user || user.role !== "admin") {
+    return (
+      <main className="mx-auto grid min-h-screen w-full max-w-md place-items-center px-4">
+        <section className="rounded-md border border-ink/10 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-2xl font-black">권한이 필요합니다</h1>
+          <p className="mt-2 text-sm text-ink/60">신고 관리는 관리자 계정으로 로그인해야 합니다.</p>
+          <Link
+            className="mt-5 inline-flex h-10 items-center rounded-md bg-ink px-4 font-bold text-white transition hover:bg-leaf"
+            href="/login"
+          >
+            로그인
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const reports = await prisma.report.findMany({
     include: {
       reporter: {

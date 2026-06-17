@@ -33,6 +33,13 @@ email: demo@feedflow.local
 password: password
 ```
 
+관리자 seed 계정:
+
+```text
+email: admin@feedflow.local
+password: password
+```
+
 ## 주요 명령
 
 ```bash
@@ -59,3 +66,9 @@ Prisma schema-engine이 현재 Windows/Node 조합에서 `migrate dev` 단계에
 - 알림 목록과 전체 읽음
 - 신고 생성과 관리자 신고 처리
 - 사용자 차단과 차단 목록
+
+## 서비스화 1단계 보안 기준
+
+- 게시글 작성, 댓글, 좋아요, 재게시, 팔로우, 차단, 신고, 프로필 수정, 알림 읽음 처리는 로그인한 사용자만 호출할 수 있습니다.
+- 관리자 신고 목록, 신고 처리, 게시글 숨김 처리는 `admin` 권한 사용자만 호출할 수 있습니다.
+- 로그아웃 상태에서는 홈/탐색/프로필 같은 공개 읽기 화면만 사용할 수 있고, 쓰기 영역은 로그인 안내를 보여줍니다.

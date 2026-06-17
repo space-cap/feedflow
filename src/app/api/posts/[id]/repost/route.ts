@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,11 @@ type RouteContext = {
 
 export async function POST(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const viewer = await getDemoUser();
+  const viewer = await getRequiredUser();
+
+  if (!viewer) {
+    return unauthorized();
+  }
 
   const post = await prisma.post.findFirst({
     where: {
@@ -100,7 +104,11 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const viewer = await getDemoUser();
+  const viewer = await getRequiredUser();
+
+  if (!viewer) {
+    return unauthorized();
+  }
 
   const post = await prisma.post.findFirst({
     where: {

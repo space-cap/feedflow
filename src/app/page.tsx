@@ -171,7 +171,19 @@ export default async function HomePage() {
         </header>
 
         <div className="py-4">
-          <PostComposer />
+          {sessionUser ? (
+            <PostComposer />
+          ) : (
+            <div className="rounded-md border border-ink/10 bg-white p-4 text-center shadow-sm">
+              <p className="font-bold">로그인하고 첫 게시글을 남겨보세요.</p>
+              <Link
+                className="mt-3 inline-flex h-10 items-center rounded-md bg-ink px-4 font-bold text-white transition hover:bg-leaf"
+                href="/login"
+              >
+                로그인
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3 pb-10">

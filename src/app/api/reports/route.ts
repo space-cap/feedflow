@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const viewer = await getDemoUser();
+  const viewer = await getRequiredUser();
+
+  if (!viewer) {
+    return unauthorized();
+  }
   const body = (await request.json().catch(() => null)) as {
     targetType?: unknown;
     targetId?: unknown;

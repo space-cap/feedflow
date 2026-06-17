@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH() {
-  const viewer = await getDemoUser();
+  const viewer = await getRequiredUser();
+
+  if (!viewer) {
+    return unauthorized();
+  }
 
   await prisma.notification.updateMany({
     where: {

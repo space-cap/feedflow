@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
+import { forbidden, unauthorized } from "@/lib/api-auth";
+import { getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const admin = await getSessionUser();
+
+  if (!admin) {
+    return unauthorized();
+  }
+
+  if (admin.role !== "admin") {
+    return forbidden();
+  }
+
   const reports = await prisma.report.findMany({
     include: {
       reporter: {

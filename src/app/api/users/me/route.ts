@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: NextRequest) {
-  const user = await getDemoUser();
+  const user = await getRequiredUser();
+
+  if (!user) {
+    return unauthorized();
+  }
   const body = (await request.json().catch(() => null)) as {
     displayName?: unknown;
     bio?: unknown;

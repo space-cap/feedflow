@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemoUser } from "@/lib/demo-session";
+import { forbidden, getRequiredAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,11 @@ type RouteContext = {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const admin = await getDemoUser();
+  const admin = await getRequiredAdmin();
+
+  if (!admin) {
+    return forbidden();
+  }
   const body = (await request.json().catch(() => null)) as { note?: unknown } | null;
   const note = typeof body?.note === "string" ? body.note : null;
 

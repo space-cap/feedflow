@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const [demo, product, design] = await Promise.all([
+  const [demo, product, design, admin] = await Promise.all([
     prisma.user.upsert({
       where: { handle: "demo" },
       update: {},
@@ -36,8 +36,24 @@ async function main() {
         displayName: "Design Desk",
         bio: "피드, 프로필, 작성 경험을 다듬는 중입니다."
       }
+    }),
+    prisma.user.upsert({
+      where: { handle: "admin" },
+      update: {
+        role: "admin"
+      },
+      create: {
+        email: "admin@feedflow.local",
+        passwordHash: "dev-only-password-hash",
+        handle: "admin",
+        displayName: "FeedFlow Admin",
+        bio: "신고와 운영 관리를 확인하는 관리자 계정입니다.",
+        role: "admin"
+      }
     })
   ]);
+
+  void admin;
 
   await prisma.follow.upsert({
     where: {
