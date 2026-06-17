@@ -45,6 +45,7 @@ password: password
 ```bash
 npm run lint
 npm run build
+npm run test:api
 npm audit --audit-level=moderate
 ```
 
@@ -76,7 +77,11 @@ Prisma schema-engine이 현재 Windows/Node 조합에서 `migrate dev` 단계에
 - 게시글 작성, 댓글, 좋아요, 재게시, 팔로우, 차단, 신고, 프로필 수정, 알림 읽음 처리는 로그인한 사용자만 호출할 수 있습니다.
 - 관리자 신고 목록, 신고 처리, 게시글 숨김 처리는 `admin` 권한 사용자만 호출할 수 있습니다.
 - 로그아웃 상태에서는 홈/탐색/프로필 같은 공개 읽기 화면만 사용할 수 있고, 쓰기 영역은 로그인 안내를 보여줍니다.
+- 운영 환경에서는 세션 쿠키에 `secure` 옵션을 적용합니다.
+- 로그인, 회원가입, 게시글 작성, 댓글 작성, 팔로우, 신고, 업로드 API에는 기본 rate limit을 적용합니다.
+- GitHub Actions CI에서 lint, build, API smoke test를 자동 실행합니다.
 
 ## 배포
 
 Docker 기준 배포 절차와 SQLite 볼륨 운영 방식은 [docs/deployment.md](docs/deployment.md)를 참고하세요.
+상용 서비스 전환 기준과 다음 운영 과제는 [docs/commercial-readiness.md](docs/commercial-readiness.md)를 참고하세요.

@@ -54,6 +54,8 @@
 | RATE_LIMITED | 429 | 요청 제한 초과 |
 | INTERNAL_ERROR | 500 | 서버 오류 |
 
+현재 로그인, 회원가입, 게시글 작성, 댓글 작성, 팔로우, 신고, 업로드 API에는 기본 rate limit이 적용되어 있다. 제한 초과 시 `Retry-After` 헤더를 함께 반환한다.
+
 ## 4. Auth API
 
 ### 4.1 회원가입

@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/demo-session";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
+import { setSessionCookie } from "@/lib/session-cookie";
 import { isValidHandle, normalizeHandle } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, {
+    key: "auth:signup",
+    limit: 5,
+    windowMs: 60 * 1000
+  });
+
+  if (limited) {
+    return limited;
+  }
+
   const body = (await request.json().catch(() => null)) as {
     email?: unknown;
     password?: unknown;
@@ -57,12 +68,7 @@ export async function POST(request: NextRequest) {
   });
 
   const response = NextResponse.json({ data: user }, { status: 201 });
-  response.cookies.set(SESSION_COOKIE_NAME, user.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30
-  });
+  setSessionCookie(response, user.id);
 
   return response;
 }

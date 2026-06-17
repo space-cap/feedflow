@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, {
+    key: "posts:create",
+    limit: 20,
+    windowMs: 60 * 1000
+  });
+
+  if (limited) {
+    return limited;
+  }
+
   const body = (await request.json().catch(() => null)) as { content?: unknown } | null;
   const content = typeof body?.content === "string" ? body.content.trim() : "";
 

@@ -2,12 +2,23 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getRequiredUser, unauthorized } from "@/lib/api-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, {
+    key: "uploads:create",
+    limit: 10,
+    windowMs: 60 * 1000
+  });
+
+  if (limited) {
+    return limited;
+  }
+
   const user = await getRequiredUser();
 
   if (!user) {

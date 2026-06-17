@@ -51,6 +51,7 @@ docker run --rm \
 ## 운영 체크리스트
 
 - `DATABASE_URL`은 배포 환경에서 명시합니다.
+- HTTPS 환경에서는 `SESSION_COOKIE_SECURE=true`를 설정합니다.
 - 업로드 파일 보존을 위해 `public/uploads`를 영속 볼륨 또는 오브젝트 스토리지로 분리합니다.
 - 관리자 계정은 seed 이후 실제 이메일과 강한 비밀번호로 교체합니다.
 - HTTPS, 보안 쿠키, rate limit, 백업 정책을 운영 환경에서 추가합니다.

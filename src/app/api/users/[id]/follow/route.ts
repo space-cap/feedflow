@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,16 @@ type RouteContext = {
 };
 
 export async function POST(_request: NextRequest, context: RouteContext) {
+  const limited = rateLimit(_request, {
+    key: "users:follow",
+    limit: 30,
+    windowMs: 60 * 1000
+  });
+
+  if (limited) {
+    return limited;
+  }
+
   const { id } = await context.params;
   const viewer = await getRequiredUser();
 

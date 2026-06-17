@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequiredUser, unauthorized } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, {
+    key: "reports:create",
+    limit: 10,
+    windowMs: 60 * 1000
+  });
+
+  if (limited) {
+    return limited;
+  }
+
   const viewer = await getRequiredUser();
 
   if (!viewer) {
