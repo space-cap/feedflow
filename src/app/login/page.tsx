@@ -17,6 +17,11 @@ export default function LoginPage() {
           </Link>
         </p>
         <p className="mt-2 text-center text-sm text-ink/60">
+          <Link className="font-bold text-leaf hover:text-ink" href="/password/reset">
+            비밀번호 재설정
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-ink/60">
           <Link className="font-bold text-ink hover:text-leaf" href="/">
             홈으로 돌아가기
           </Link>

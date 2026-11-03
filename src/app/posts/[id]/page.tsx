@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { ReplyComposer } from "@/components/reply-composer";
 import { getBlockedUserIds, isBlockedBetween } from "@/lib/blocking";
-import { getDemoUser } from "@/lib/demo-session";
+import { getDemoUser, getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +93,7 @@ async function getPost(id: string, viewerId: string) {
 
 export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const { id } = await params;
+  const sessionUser = await getSessionUser();
   const viewer = await getDemoUser();
   const post = await getPost(id, viewer.id);
 
@@ -135,9 +136,9 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
               reposts: post.repostCount
             }}
             viewer={{
-              liked: post.likes.length > 0,
-              reposted: post.reposts.length > 0,
-              canManage: post.author.id === viewer.id
+              liked: sessionUser ? post.likes.length > 0 : false,
+              reposted: sessionUser ? post.reposts.length > 0 : false,
+              canManage: post.author.id === sessionUser?.id
             }}
           />
 
@@ -171,9 +172,9 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
                     reposts: reply.repostCount
                   }}
                   viewer={{
-                    liked: reply.likes.length > 0,
-                    reposted: reply.reposts.length > 0,
-                    canManage: reply.author.id === viewer.id
+                    liked: sessionUser ? reply.likes.length > 0 : false,
+                    reposted: sessionUser ? reply.reposts.length > 0 : false,
+                    canManage: reply.author.id === sessionUser?.id
                   }}
                 />
               ))

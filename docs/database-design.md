@@ -208,9 +208,48 @@ SQLite 파일은 로컬 개발용이며 Git에는 커밋하지 않는다. 마이
 | admin_id | text | foreign key, not null | 운영자 ID |
 | target_type | text | not null | `post`, `user`, `report` |
 | target_id | text | not null | 대상 ID |
-| action | text | not null | `hide_post`, `report_open`, `report_reviewing`, `report_resolved`, `report_rejected` |
+| action | text | not null | `hide_post`, `suspend_user`, `unsuspend_user`, `report_open`, `report_reviewing`, `report_resolved`, `report_rejected` |
 | note | text | nullable | 처리 메모 |
 | created_at | datetime | not null | 생성 시각 |
+
+### 4.10 login_attempts
+
+로그인 성공과 실패 이력을 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| id | text | primary key | 로그인 이력 ID |
+| email | text | not null | 입력된 이메일 |
+| user_id | text | foreign key nullable | 매칭된 사용자 |
+| ip_address | text | not null | 요청 IP |
+| success | integer | not null, default 0 | 로그인 성공 여부 |
+| reason | text | nullable | 실패 또는 차단 사유 |
+| created_at | datetime | not null | 생성 시각 |
+
+인덱스:
+
+- `login_attempts.email, login_attempts.created_at`
+- `login_attempts.ip_address, login_attempts.created_at`
+- `login_attempts.user_id, login_attempts.created_at`
+
+### 4.11 password_reset_tokens
+
+비밀번호 재설정 토큰의 해시와 만료 시간을 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| id | text | primary key | 토큰 ID |
+| user_id | text | foreign key, not null | 사용자 ID |
+| token_hash | text | unique, not null | 원문 토큰의 SHA-256 해시 |
+| expires_at | datetime | not null | 만료 시각 |
+| used_at | datetime nullable | 사용 시각 |
+| created_at | datetime | not null | 생성 시각 |
+
+인덱스:
+
+- unique `password_reset_tokens.token_hash`
+- `password_reset_tokens.user_id, password_reset_tokens.created_at`
+- `password_reset_tokens.expires_at`
 
 ## 5. 관계 요약
 

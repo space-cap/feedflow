@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "@/lib/request-ip";
 
 type RateLimitOptions = {
   key: string;
@@ -12,13 +13,6 @@ type Bucket = {
 };
 
 const buckets = new Map<string, Bucket>();
-
-function getClientId(request: NextRequest) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-
-  return forwardedFor || realIp || "local";
-}
 
 function cleanup(now: number) {
   if (buckets.size < 1000) {
@@ -34,7 +28,7 @@ function cleanup(now: number) {
 
 export function rateLimit(request: NextRequest, options: RateLimitOptions) {
   const now = Date.now();
-  const key = `${options.key}:${getClientId(request)}`;
+  const key = `${options.key}:${getClientIp(request)}`;
   const bucket = buckets.get(key);
 
   cleanup(now);

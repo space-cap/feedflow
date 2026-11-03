@@ -34,6 +34,8 @@ model User {
   reportsCreated        Report[]            @relation("Reporter")
   reviewedReports       Report[]            @relation("ReportReviewer")
   moderationActions     ModerationAction[]   @relation("AdminActions")
+  loginAttempts         LoginAttempt[]
+  passwordResetTokens   PasswordResetToken[]
 }
 
 model Post {
@@ -173,4 +175,34 @@ model ModerationAction {
   createdAt  DateTime @default(now())
 
   admin User @relation("AdminActions", fields: [adminId], references: [id])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  userId    String?
+  ipAddress String
+  success   Boolean  @default(false)
+  reason    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }

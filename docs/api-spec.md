@@ -55,6 +55,7 @@
 | INTERNAL_ERROR | 500 | 서버 오류 |
 
 현재 로그인, 회원가입, 게시글 작성, 댓글 작성, 팔로우, 신고, 업로드 API에는 기본 rate limit이 적용되어 있다. 제한 초과 시 `Retry-After` 헤더를 함께 반환한다.
+쿠키 세션을 사용하는 쓰기 API는 CSRF 방어를 위해 `Origin` 또는 `Referer`가 서비스 origin과 다르면 403을 반환한다.
 
 ## 4. Auth API
 
@@ -138,15 +139,66 @@
 ```json
 {
   "data": {
-    "id": "usr_123",
-    "email": "user@example.com",
-    "handle": "feeduser",
-    "displayName": "Feed User",
-    "bio": "",
-    "avatarUrl": null,
-    "isPrivate": false,
-    "role": "user"
+    "user": {
+      "id": "usr_123",
+      "email": "user@example.com",
+      "handle": "feeduser",
+      "displayName": "Feed User",
+      "bio": "",
+      "avatarUrl": null,
+      "isPrivate": false,
+      "role": "user"
+    },
+    "authenticated": true
   }
+}
+```
+
+로그아웃 상태에서는 다음처럼 응답한다.
+
+```json
+{
+  "data": {
+    "user": null,
+    "authenticated": false
+  }
+}
+```
+
+### 4.5 비밀번호 재설정 요청
+
+`POST /api/auth/password/reset-request`
+
+요청:
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+응답:
+
+```json
+{
+  "data": {
+    "ok": true
+  }
+}
+```
+
+개발 환경에서는 메일 발송 전 검증을 위해 `debugToken`이 함께 반환될 수 있다.
+
+### 4.6 비밀번호 재설정
+
+`POST /api/auth/password/reset`
+
+요청:
+
+```json
+{
+  "token": "reset-token",
+  "password": "new-password"
 }
 ```
 
@@ -459,13 +511,9 @@
 
 `GET /api/users/:handle/followers?cursor=&limit=20`
 
-상태: 예정
-
 ### 7.4 팔로잉 목록
 
 `GET /api/users/:handle/following?cursor=&limit=20`
-
-상태: 예정
 
 ### 7.5 팔로우 요청 승인
 
@@ -626,12 +674,22 @@
 
 `POST /api/admin/users/:id/suspend`
 
-상태: 예정
-
 요청:
 
 ```json
 {
   "note": "abuse"
+}
+```
+
+### 12.5 계정 정지 해제
+
+`DELETE /api/admin/users/:id/suspend`
+
+요청:
+
+```json
+{
+  "note": "appeal accepted"
 }
 ```

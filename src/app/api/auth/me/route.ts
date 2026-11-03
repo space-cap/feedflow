@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server";
-import { getDemoUser, getSessionUser } from "@/lib/demo-session";
+import { getSessionUser } from "@/lib/demo-session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const sessionUser = await getSessionUser();
-  const user = sessionUser ?? (await getDemoUser());
+
+  if (!sessionUser) {
+    return NextResponse.json({
+      data: {
+        user: null,
+        authenticated: false
+      }
+    });
+  }
 
   return NextResponse.json({
     data: {
-      id: user.id,
-      email: user.email,
-      handle: user.handle,
-      displayName: user.displayName,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
-      isPrivate: user.isPrivate,
-      role: user.role,
-      authenticated: sessionUser !== null
+      user: {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        handle: sessionUser.handle,
+        displayName: sessionUser.displayName,
+        bio: sessionUser.bio,
+        avatarUrl: sessionUser.avatarUrl,
+        isPrivate: sessionUser.isPrivate,
+        role: sessionUser.role
+      },
+      authenticated: true
     }
   });
 }

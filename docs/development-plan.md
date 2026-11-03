@@ -33,13 +33,15 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 - Next.js App Router, TypeScript, Tailwind CSS, Prisma, SQLite 기반으로 구현한다.
 - 인증은 `feedflow_user_id` HTTP-only 쿠키 세션을 사용한다.
 - 회원가입, 로그인, 로그아웃, 프로필 편집, 프로필 이미지 업로드가 구현되어 있다.
+- 비밀번호 재설정 API와 화면이 구현되어 있으며, 운영 이메일 발송 연동은 남은 작업이다.
 - 게시글 작성, 조회, 수정, 삭제, 댓글, 좋아요, 재게시가 구현되어 있다.
 - 홈 피드, 탐색 피드, 프로필 피드, 커서 페이지네이션이 구현되어 있다.
+- 팔로워/팔로잉 목록 API가 구현되어 있다.
 - 팔로우, 언팔로우, 비공개 계정 팔로우 요청 승인/거절이 구현되어 있다.
 - 알림 목록, 전체 읽음, 개별 읽음이 구현되어 있다.
-- 신고 생성, 관리자 신고 목록/상세/상태 변경, 게시글 숨김, 사용자 차단이 구현되어 있다.
+- 신고 생성, 관리자 신고 목록/상세/상태 변경, 게시글 숨김, 사용자 정지/해제, 사용자 차단이 구현되어 있다.
 - 해시태그 추출, 탐색 화면 해시태그 필터, 모바일 하단 탭, 공통 로딩/에러/404 화면이 구현되어 있다.
-- Dockerfile과 배포 가이드, 기본 rate limit, GitHub Actions CI는 준비되어 있으나 운영 모니터링과 Redis 기반 rate limit은 아직 남은 작업이다.
+- Dockerfile과 배포 가이드, CSRF 기본 방어, 로그인 실패 이력/잠금, 기본 rate limit, GitHub Actions CI는 준비되어 있으나 운영 모니터링과 Redis 기반 rate limit은 아직 남은 작업이다.
 - 상용화 기준의 상세 작업은 `docs/commercial-readiness.md`를 따른다.
 
 ## 3. 사용자 범위
@@ -69,7 +71,7 @@ FeedFlow는 X(구 Twitter), Threads와 유사한 짧은 글 기반 소셜 네트
 
 - 이메일 기반 회원가입
 - 로그인, 로그아웃
-- 비밀번호 재설정은 다음 단계 기능으로 둔다.
+- 비밀번호 재설정
 - 닉네임, 핸들, 소개글, 프로필 이미지 설정
 - 공개 계정과 비공개 계정 옵션
 
@@ -279,8 +281,8 @@ Background Worker
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
-- `POST /api/auth/password/reset-request` 예정
-- `POST /api/auth/password/reset` 예정
+- `POST /api/auth/password/reset-request`
+- `POST /api/auth/password/reset`
 
 ### 9.2 Users
 
@@ -310,8 +312,8 @@ Background Worker
 - `GET /api/follow-requests`
 - `POST /api/follow-requests/:id/approve`
 - `POST /api/follow-requests/:id/reject`
-- `GET /api/users/:handle/followers` 예정
-- `GET /api/users/:handle/following` 예정
+- `GET /api/users/:handle/followers`
+- `GET /api/users/:handle/following`
 
 ### 9.5 Feeds
 
@@ -332,7 +334,8 @@ Background Worker
 - `GET /api/admin/reports`
 - `PATCH /api/admin/reports/:id`
 - `POST /api/admin/posts/:id/hide`
-- `POST /api/admin/users/:id/suspend` 예정
+- `POST /api/admin/users/:id/suspend`
+- `DELETE /api/admin/users/:id/suspend`
 
 ## 10. 화면 구성
 
@@ -340,7 +343,7 @@ Background Worker
 
 - 로그인
 - 회원가입
-- 비밀번호 재설정 예정
+- 비밀번호 재설정
 - 공개 프로필
 - 게시글 상세
 
@@ -398,8 +401,9 @@ MVP에서는 홈 피드를 팔로우 기반 최신순으로 구현한다. 쿼리
 - 현재 구현은 HTTP-only 쿠키 세션을 사용한다.
 - 운영 전환 시 Access Token과 Refresh Token 분리 또는 서버 세션 저장소 도입을 검토한다.
 - 운영 전환 시 Refresh Token 회전 또는 세션 회전을 검토한다.
-- 로그인 실패 rate limit은 기본 인메모리 방식으로 적용되어 있으며, 운영 단계에서는 Redis 기반으로 전환한다.
+- 로그인 실패 rate limit과 로그인 실패 이력 기반 계정 잠금이 적용되어 있으며, 운영 단계에서는 Redis 기반 rate limit으로 전환한다.
 - 이메일 인증 도입 검토
+- CSRF 방어는 API 요청의 `Origin`/`Referer` 검증으로 시작한다.
 
 ### 12.2 사용자 보호
 
@@ -582,8 +586,8 @@ DM, 추천 알고리즘, 트렌드, 미디어 기능을 너무 빨리 넣으면 
 
 ## 19. 다음 액션
 
-1. 현재 문서와 실제 구현 상태를 기준으로 남은 기능을 이슈 단위로 정리한다.
-2. 비밀번호 재설정, 팔로워/팔로잉 목록, 관리자 사용자 제재 중 다음 구현 대상을 선택한다.
-3. CSRF 방어와 로그인 실패 이력 저장을 추가한다.
-4. 운영 로그, 에러 추적, 감사 로그 조회 화면을 추가한다.
+1. 운영 이메일 발송을 비밀번호 재설정 플로우에 연결한다.
+2. 운영 로그, 에러 추적, 감사 로그 조회 화면을 추가한다.
+3. rate limit 저장소를 Redis로 전환한다.
+4. 업로드 파일을 오브젝트 스토리지로 분리한다.
 5. 운영 DB 전환 여부를 결정하고 PostgreSQL 전환 계획을 구체화한다.

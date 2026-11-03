@@ -67,6 +67,7 @@ export default async function HomePage() {
   const sessionUser = await getSessionUser();
   const viewer = await getDemoUser();
   const posts = await getHomePosts(viewer.id);
+  const activeUser = sessionUser ?? null;
 
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 gap-0 px-4 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)_280px] lg:px-8">
@@ -118,7 +119,7 @@ export default async function HomePage() {
               { icon: Home, label: "홈", href: "/" },
               { icon: Compass, label: "탐색", href: "/explore" },
               { icon: Bell, label: "알림", href: "/notifications" },
-              { icon: UserRound, label: "프로필", href: `/users/${viewer.handle}` },
+              { icon: sessionUser ? UserRound : LogIn, label: sessionUser ? "프로필" : "로그인", href: sessionUser ? `/users/${sessionUser.handle}` : "/login" },
               { icon: Settings, label: "설정", href: "/settings" }
             ].map((item) => (
               <Link
@@ -212,9 +213,9 @@ export default async function HomePage() {
                   reposts: post.repostCount
                 }}
                 viewer={{
-                  liked: post.likes.length > 0,
-                  reposted: post.reposts.length > 0,
-                  canManage: post.author.id === viewer.id
+                  liked: activeUser ? post.likes.length > 0 : false,
+                  reposted: activeUser ? post.reposts.length > 0 : false,
+                  canManage: post.author.id === activeUser?.id
                 }}
               />
             ))

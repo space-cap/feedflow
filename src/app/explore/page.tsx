@@ -2,7 +2,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { getBlockedUserIds } from "@/lib/blocking";
-import { getDemoUser } from "@/lib/demo-session";
+import { getDemoUser, getSessionUser } from "@/lib/demo-session";
 import { extractHashtags, normalizeHashtag } from "@/lib/hashtags";
 import { prisma } from "@/lib/prisma";
 
@@ -115,6 +115,7 @@ async function getExploreResults(query: string, tag: string, viewerId: string) {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
+  const sessionUser = await getSessionUser();
   const viewer = await getDemoUser();
   const { q, tag: rawTag } = await searchParams;
   const query = q?.trim() ?? "";
@@ -236,9 +237,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
                     reposts: post.repostCount
                   }}
                   viewer={{
-                    liked: post.likes.length > 0,
-                    reposted: post.reposts.length > 0,
-                    canManage: post.author.id === viewer.id
+                    liked: sessionUser ? post.likes.length > 0 : false,
+                    reposted: sessionUser ? post.reposts.length > 0 : false,
+                    canManage: post.author.id === sessionUser?.id
                   }}
                 />
               ))

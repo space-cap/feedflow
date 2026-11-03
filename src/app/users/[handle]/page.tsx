@@ -5,7 +5,7 @@ import { BlockButton } from "@/components/block-button";
 import { FollowButton } from "@/components/follow-button";
 import { PostCard } from "@/components/post-card";
 import { getBlockedUserIds, isBlockedBetween } from "@/lib/blocking";
-import { getDemoUser } from "@/lib/demo-session";
+import { getDemoUser, getSessionUser } from "@/lib/demo-session";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -101,6 +101,7 @@ async function getProfile(handle: string, viewerId: string) {
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const { handle } = await params;
+  const sessionUser = await getSessionUser();
   const viewer = await getDemoUser();
   const profile = await getProfile(handle, viewer.id);
 
@@ -108,7 +109,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     notFound();
   }
 
-  const isSelf = profile.user.id === viewer.id;
+  const isSelf = profile.user.id === sessionUser?.id;
   const canSeePosts =
     !profile.user.isPrivate || isSelf || profile.relationship === "accepted";
 
@@ -137,7 +138,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
               <div className="grid h-16 w-16 shrink-0 place-items-center rounded-md bg-mist text-2xl font-black text-leaf">
                 {profile.user.displayName.slice(0, 1).toUpperCase()}
               </div>
-              {!isSelf ? (
+              {sessionUser && !isSelf ? (
                 <div className="flex flex-wrap gap-2">
                   <FollowButton
                     initialStatus={profile.relationship as "none" | "pending" | "accepted"}
@@ -188,9 +189,9 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                     reposts: post.repostCount
                   }}
                   viewer={{
-                    liked: post.likes.length > 0,
-                    reposted: post.reposts.length > 0,
-                    canManage: post.author.id === viewer.id
+                    liked: sessionUser ? post.likes.length > 0 : false,
+                    reposted: sessionUser ? post.reposts.length > 0 : false,
+                    canManage: post.author.id === sessionUser?.id
                   }}
                 />
               ))}
